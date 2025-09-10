@@ -2,3 +2,4 @@ raylib/
 .vscode/
 *.exe
 *.text
+.gitignore
