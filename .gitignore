@@ -1,5 +1,6 @@
 raylib/
+lib/
+include/
 .vscode/
 *.exe
 *.text
-.gitignore
