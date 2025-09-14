@@ -25,10 +25,36 @@ struct Bullet{
     string direction = "";
 };
 
+struct Skill {
+    float x, y;
+    float currentRadius = 0.0;
+    float maxRadius = 100.0;
+    float currentDuration = 0.0; // in seconds
+    float maxDuration = 0.5; // in seconds
+    float currentCooldown = 5.0; // in seconds
+    float maxCooldown = 5.0; // in seconds
+    Color color = YELLOW;
+    bool isBeingCast = false;
+};
+
 struct FrameCoord{
     int x = 0;
     int y = 0;
 };
+
+void castSkill(Skill *skill, Player *player, float delta, int frame_size, int sprite_scale) {
+    if (skill->currentDuration < skill->maxDuration) {
+        skill->x = player->x + ((frame_size * sprite_scale) / 2); // middle of player
+        skill->y = player->y + ((frame_size * sprite_scale) / 2); // middle of player
+        skill->currentRadius += skill->maxRadius * delta;
+    }
+    else {
+        skill->currentRadius = 0.0;
+        skill->currentDuration = 0.0;
+        skill->currentCooldown = 0.0;
+        skill->isBeingCast = false;
+    }
+}
 
 int main(){
 
@@ -51,8 +77,11 @@ int main(){
 
     Player p = {50, 50, frame_width, frame_height};
 
+    Skill skill;
+
     while(!WindowShouldClose()){
         float delta_time = GetFrameTime();
+        skill.currentCooldown += delta_time;
 
         Vector2 move = {0, 0};
         if(IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) move.y -= 1;
@@ -63,7 +92,17 @@ int main(){
         // Handles player movement
         p.x += move.x * p.speed * delta_time;
         p.y += move.y * p.speed * delta_time;
- 
+
+        // Handles player skill
+        if(IsKeyPressed(KEY_SPACE) && skill.currentCooldown > skill.maxCooldown) {
+            skill.isBeingCast = true;
+            castSkill(&skill, &p, delta_time, frame_width, sprite_scale);
+        }
+        else if (skill.isBeingCast) {
+            skill.currentDuration += delta_time;
+            castSkill(&skill, &p, delta_time, frame_width, sprite_scale);
+        }
+
         // Set direction of player
         if (move.x < 0 && move.y < 0) p.direction = "up-left";
         else if (move.x > 0 && move.y < 0) p.direction = "up-right";
@@ -103,6 +142,7 @@ int main(){
         Rectangle orig_frame = {frame_coord.x * frame_width, frame_coord.y * frame_height, frame_width, frame_height};
         Rectangle scaled_frame = {p.x, p.y, frame_width * sprite_scale, frame_height * sprite_scale};
         DrawTexturePro(mage_walk, orig_frame, scaled_frame, {0, 0}, 0, WHITE);
+        DrawCircle(skill.x, skill.y, skill.currentRadius, skill.color);
         EndDrawing();
     }
     UnloadTexture(mage_walk);
