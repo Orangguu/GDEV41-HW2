@@ -2,6 +2,7 @@
 #include <string>
 #include <fstream>
 #include <cctype>
+#include <cmath>
 using namespace std;
 
 const int FPS = 60;
