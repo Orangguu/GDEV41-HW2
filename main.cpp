@@ -8,6 +8,17 @@ const int FPS = 60;
 const int SPRITE_FPS = 4;
 const float norm = sqrt(2);
 
+enum Direction {
+    DOWN,
+    DOWN_RIGHT,
+    RIGHT,
+    UP_RIGHT,
+    UP,
+    UP_LEFT,
+    LEFT,
+    DOWN_LEFT
+};
+
 struct Player{
     float x;
     float y;
@@ -16,14 +27,14 @@ struct Player{
     bool is_attacking = false;
     bool is_idle = true;
     int skill_cd = 5;
-    string direction = "";
+    Direction direction = DOWN;
 };
 
 struct Bullet{
     int speed = 500;
     int radius = 5;
     float x = 0, y = 0;
-    string direction = "";
+    Direction direction = DOWN;
     bool active = false;
 };
 
@@ -121,14 +132,14 @@ int main(){
         }
 
         // Set direction of player
-        if (move.x < 0 && move.y < 0) p.direction = "up-left";
-        else if (move.x > 0 && move.y < 0) p.direction = "up-right";
-        else if (move.x < 0 && move.y > 0) p.direction = "down-left";
-        else if (move.x > 0 && move.y > 0) p.direction = "down-right";
-        else if (move.x < 0) p.direction = "left";
-        else if (move.x > 0) p.direction = "right";
-        else if (move.y < 0) p.direction = "up";
-        else if (move.y > 0) p.direction = "down";
+        if (move.x < 0 && move.y < 0) p.direction = UP_LEFT;
+        else if (move.x > 0 && move.y < 0) p.direction = UP_RIGHT;
+        else if (move.x < 0 && move.y > 0) p.direction = DOWN_LEFT;
+        else if (move.x > 0 && move.y > 0) p.direction = DOWN_RIGHT;
+        else if (move.x < 0) p.direction = LEFT;
+        else if (move.x > 0) p.direction = RIGHT;
+        else if (move.y < 0) p.direction = UP;
+        else if (move.y > 0) p.direction = DOWN;
         p.is_idle = (move.x == 0 && move.y == 0);
 
         // handle bullets
@@ -139,51 +150,63 @@ int main(){
                 bullet.direction = p.direction;
                 bullet.active = true;
                 bulletTimer = 0.0f;
+                p.is_attacking = true;
+                frame_coord.x = 0;
             }
         }
 
         if (bullet.active) {
-            if (bullet.direction == "left") bullet.x -= bullet.speed * delta_time;
-            else if (bullet.direction == "right") bullet.x += bullet.speed * delta_time;
-            else if (bullet.direction == "up") bullet.y -= bullet.speed * delta_time;
-            else if (bullet.direction == "down") bullet.y += bullet.speed * delta_time;
-            else if (bullet.direction == "up-left") {
-                bullet.y -= bullet.speed * delta_time / norm;
-                bullet.x -= bullet.speed * delta_time / norm;
-            }
-            else if (bullet.direction == "up-right") {
-                bullet.y -= bullet.speed * delta_time / norm;
-                bullet.x += bullet.speed * delta_time / norm;
-            }
-            else if (bullet.direction == "down-left") {
-                bullet.y += bullet.speed * delta_time / norm;
-                bullet.x -= bullet.speed * delta_time / norm;
-            }
-            else if (bullet.direction == "down-right") {
-                bullet.y += bullet.speed * delta_time / norm;
-                bullet.x += bullet.speed * delta_time / norm;
-            }
+            switch (bullet.direction) {
+                case LEFT: bullet.x -= bullet.speed * delta_time; break;
+                case RIGHT: bullet.x += bullet.speed * delta_time; break;
+                case UP: bullet.y -= bullet.speed * delta_time; break;
+                case DOWN: bullet.y += bullet.speed * delta_time; break;
 
+                case UP_LEFT: 
+                    bullet.y -= bullet.speed * delta_time / norm;
+                    bullet.x -= bullet.speed * delta_time / norm;
+                    break;
+                case UP_RIGHT:
+                    bullet.y -= bullet.speed * delta_time / norm;
+                    bullet.x += bullet.speed * delta_time / norm;
+                    break;
+                case DOWN_LEFT:
+                    bullet.y += bullet.speed * delta_time / norm;
+                    bullet.x -= bullet.speed * delta_time / norm;
+                    break;
+                case DOWN_RIGHT:
+                    bullet.y += bullet.speed * delta_time / norm;
+                    bullet.x += bullet.speed * delta_time / norm;
+                    break;
+            }
+           
             if (bullet.x < 0 || bullet.x > GetScreenWidth() || bullet.y < 0 || bullet.y > GetScreenHeight()) {
                 bullet.active = false;
             }
         }
 
         // Handle sprite 
-        if(p.direction == "down") frame_coord.y = 0;
-        else if(p.direction == "down-right") frame_coord.y = 1;
-        else if(p.direction == "right") frame_coord.y = 2;
-        else if(p.direction == "up-right") frame_coord.y = 3;
-        else if(p.direction == "up") frame_coord.y = 4;
-        else if(p.direction == "up-left") frame_coord.y = 5;
-        else if(p.direction == "left") frame_coord.y = 6;
-        else if(p.direction == "down-left") frame_coord.y = 7;
+        if(p.direction == DOWN) frame_coord.y = 0;
+        else if(p.direction == DOWN_RIGHT) frame_coord.y = 1;
+        else if(p.direction == RIGHT) frame_coord.y = 2;
+        else if(p.direction == UP_RIGHT) frame_coord.y = 3;
+        else if(p.direction == UP) frame_coord.y = 4;
+        else if(p.direction == UP_LEFT) frame_coord.y = 5;
+        else if(p.direction == LEFT) frame_coord.y = 6;
+        else if(p.direction == DOWN_LEFT) frame_coord.y = 7;
 
         // Handle sprite animations
         anim_timer += delta_time;
         if(anim_timer >= 1.0f / SPRITE_FPS){
             anim_timer = 0;
-            if (p.is_idle) {
+
+            if (p.is_attacking) {
+                frame_coord.x++;
+                if (frame_coord.x > 2) {
+                    frame_coord.x = 0;
+                    p.is_attacking = false;
+                }
+            } else if (p.is_idle) {
                 // Idle cycle (columns 0–1)
                 frame_coord.x = (frame_coord.x == 0) ? 1 : 0;
             } else {
@@ -195,9 +218,10 @@ int main(){
         BeginDrawing();
         ClearBackground(BLACK);
 
+        Texture currentTexture = p.is_attacking ? mage_attack : mage_walk;
         Rectangle orig_frame = {frame_coord.x * frame_width, frame_coord.y * frame_height, frame_width, frame_height};
         Rectangle scaled_frame = {p.x, p.y, frame_width * sprite_scale, frame_height * sprite_scale};
-        DrawTexturePro(mage_walk, orig_frame, scaled_frame, {0, 0}, 0, WHITE);
+        DrawTexturePro(currentTexture, orig_frame, scaled_frame, {0, 0}, 0, WHITE);
 
         // draw cast skill
         DrawCircle(skill.x, skill.y, skill.currentRadius, skill.color);
@@ -211,6 +235,7 @@ int main(){
     }
 
     UnloadTexture(mage_walk);
+    UnloadTexture(mage_attack);
     CloseWindow();
     return 0;
 }
