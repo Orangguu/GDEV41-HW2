@@ -35,7 +35,7 @@ struct Bullet{
     int speed = 500;
     int radius = 5;
     float x = 0, y = 0;
-    Direction direction = DOWN;
+    Vector2 dir = {0, 0};
     bool active = false;
 };
 
@@ -148,7 +148,17 @@ int main(){
             if (!p.is_idle) {
                 bullet.x = p.x + (p.width * sprite_scale) / 2;
                 bullet.y = p.y + (p.height * sprite_scale) / 2;
-                bullet.direction = p.direction;
+
+                // Get mouse and compute direction
+                Vector2 mouse = GetMousePosition();
+                Vector2 dir = { mouse.x - bullet.x, mouse.y - bullet.y };
+                float len = sqrt(dir.x * dir.x + dir.y * dir.y);
+                if (len > 0) {
+                    dir.x /= len;
+                    dir.y /= len;
+                }
+                bullet.dir = dir;
+
                 bullet.active = true;
                 bulletTimer = 0.0f;
                 p.is_attacking = true;
@@ -156,32 +166,13 @@ int main(){
             }
         }
 
-        if (bullet.active) {
-            switch (bullet.direction) {
-                case LEFT: bullet.x -= bullet.speed * delta_time; break;
-                case RIGHT: bullet.x += bullet.speed * delta_time; break;
-                case UP: bullet.y -= bullet.speed * delta_time; break;
-                case DOWN: bullet.y += bullet.speed * delta_time; break;
 
-                case UP_LEFT: 
-                    bullet.y -= bullet.speed * delta_time / norm;
-                    bullet.x -= bullet.speed * delta_time / norm;
-                    break;
-                case UP_RIGHT:
-                    bullet.y -= bullet.speed * delta_time / norm;
-                    bullet.x += bullet.speed * delta_time / norm;
-                    break;
-                case DOWN_LEFT:
-                    bullet.y += bullet.speed * delta_time / norm;
-                    bullet.x -= bullet.speed * delta_time / norm;
-                    break;
-                case DOWN_RIGHT:
-                    bullet.y += bullet.speed * delta_time / norm;
-                    bullet.x += bullet.speed * delta_time / norm;
-                    break;
-            }
-           
-            if (bullet.x < 0 || bullet.x > GetScreenWidth() || bullet.y < 0 || bullet.y > GetScreenHeight()) {
+        if (bullet.active) {
+            bullet.x += bullet.dir.x * bullet.speed * delta_time;
+            bullet.y += bullet.dir.y * bullet.speed * delta_time;
+
+            if (bullet.x < 0 || bullet.x > GetScreenWidth() ||
+                bullet.y < 0 || bullet.y > GetScreenHeight()) {
                 bullet.active = false;
             }
         }
